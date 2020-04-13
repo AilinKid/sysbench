@@ -37,6 +37,10 @@ sysbench.cmdline.options = {
       {"Range size for range SELECT queries", 100},
    tables =
       {"Number of tables", 1},
+   enable_sequence =
+      {"Enable sequence insert test", false},
+   sequences =
+      {"Number of sequences", 10},
    point_selects =
       {"Number of point SELECT queries per transaction", 10},
    simple_ranges =
@@ -90,6 +94,12 @@ function cmd_prepare()
    for i = sysbench.tid % sysbench.opt.threads + 1, sysbench.opt.tables,
    sysbench.opt.threads do
      create_table(drv, con, i)
+   end
+   if sysbench.opt.enable_sequence then
+       for i = sysbench.tid % sysbench.opt.threads + 1, sysbench.opt.sequences,
+       sysbench.opt.threads do
+         create_sequence(drv, con, i)
+       end
    end
 end
 
@@ -154,6 +164,17 @@ function get_pad_value()
    return sysbench.rand.string(pad_value_template)
 end
 
+function create_sequence(drv, con, sequence_num)
+   local query
+   query = string.format([[CREATE sequence sbseq%d]], sequence_num)
+   if drv:name() == "mysql" then
+       con:query(query)
+       print(string.format("Create sequence 'sbseq%d'", sequence_num))
+   else
+       error("Unsupported database driver:" .. drv:name())
+   end
+end
+
 function create_table(drv, con, table_num)
    local id_index_def, id_def
    local engine_def = ""
@@ -169,9 +190,9 @@ function create_table(drv, con, table_num)
    if drv:name() == "mysql"
    then
       if sysbench.opt.auto_inc then
-         id_def = "INTEGER NOT NULL AUTO_INCREMENT"
+         id_def = "BIGINT NOT NULL AUTO_INCREMENT"
       else
-         id_def = "INTEGER NOT NULL"
+         id_def = "BIGINT NOT NULL"
       end
       engine_def = "/*! ENGINE = " .. sysbench.opt.mysql_storage_engine .. " */"
    elseif drv:name() == "pgsql"
@@ -192,7 +213,7 @@ function create_table(drv, con, table_num)
    query = string.format([[
 CREATE TABLE sbtest%d(
   id %s,
-  k INTEGER DEFAULT '0' NOT NULL,
+  k BIGINT DEFAULT '0' NOT NULL,
   c CHAR(120) DEFAULT '' NOT NULL,
   pad CHAR(60) DEFAULT '' NOT NULL,
   %s (id)
@@ -397,6 +418,12 @@ function cleanup()
    for i = 1, sysbench.opt.tables do
       print(string.format("Dropping table 'sbtest%d'...", i))
       con:query("DROP TABLE IF EXISTS sbtest" .. i )
+   end
+   if sysbench.opt.enable_sequence then
+      for i = 1, sysbench.opt.sequences do
+          print(string.format("Dropping sequence 'sbseq%d'...", i))
+          con:query("DROP SEQUENCE IF EXISTS sbseq" .. i)
+      end
    end
 end
 

@@ -50,6 +50,11 @@ function event()
       con:query(string.format("INSERT INTO %s (k, c, pad) VALUES " ..
                                  "(%d, '%s', '%s')",
                               table_name, k_val, c_val, pad_val))
+   elseif sysbench.opt.enable_sequence then
+      local seq_name = "sbseq" .. sysbench.rand.uniform(1, sysbench.opt.sequences)
+      con:query(string.format("INSERT INTO %s (id, k, c, pad) VALUES " ..
+                                       "(nextval(%s), %d, '%s', '%s')",
+                                    table_name, seq_name, k_val, c_val, pad_val))
    else
       if (sysbench.opt.auto_inc) then
          i = 0
