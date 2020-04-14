@@ -41,8 +41,8 @@ sysbench.cmdline.options = {
       {"Enable/Disable sequence insert test", false},
    sequences =
       {"Number of sequences", 10},
-   enable_seq_nocache =
-      {"Enable/Disable sequence nocache", false},
+   seq_cache =
+      {"Sequence cache mode", "cache 1000"},
    point_selects =
       {"Number of point SELECT queries per transaction", 10},
    simple_ranges =
@@ -168,16 +168,10 @@ end
 
 function create_sequence(drv, con, sequence_num)
    local query
-   local cache_field
-   if sysbench.opt.enable_seq_nocache then
-      cache_field = "nocache"
-   else
-      cache_field = "cache"
-   end
-   query = string.format([[CREATE sequence sbseq%d %s]], sequence_num, cache_field)
+   query = string.format([[CREATE sequence sbseq%d %s]], sequence_num, sysbench.opt.seq_cache)
    if drv:name() == "mysql" then
        con:query(query)
-       print(string.format("Create sequence 'sbseq%d' %s", sequence_num, cache_field))
+       print(string.format("Create sequence 'sbseq%d' %s", sequence_num, sysbench.opt.seq_cache))
    else
        error("Unsupported database driver:" .. drv:name())
    end

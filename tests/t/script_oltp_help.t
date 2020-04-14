@@ -27,6 +27,6 @@ OLTP usage information test
     --table_size=N                Number of rows per table [10000]
     --tables=N                    Number of tables [1]
     --enable_sequence[=on|off]    Enable/Disable sequence insert test [off]
-    --enable_seq_nocache[=on|off] Enable/Disable sequence nocache [off]
-    --sequences                   Number of sequences [10]
+    --seq_cache=STRING            Sequence nocache mode [cache 1000]
+    --sequences=N                 Number of sequences [10]
   
