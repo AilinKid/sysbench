@@ -26,4 +26,7 @@ OLTP usage information test
     --sum_ranges=N                Number of SELECT SUM() queries per transaction [1]
     --table_size=N                Number of rows per table [10000]
     --tables=N                    Number of tables [1]
+    --enable_sequence[=on|off]    Enable/Disable sequence insert test [off]
+    --enable_seq_nocache[=on|off] Enable/Disable sequence nocache [off]
+    --sequences                   Number of sequences [10]
   

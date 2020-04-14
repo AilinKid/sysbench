@@ -38,9 +38,11 @@ sysbench.cmdline.options = {
    tables =
       {"Number of tables", 1},
    enable_sequence =
-      {"Enable sequence insert test", false},
+      {"Enable/Disable sequence insert test", false},
    sequences =
       {"Number of sequences", 10},
+   enable_seq_nocache =
+      {"Enable/Disable sequence nocache", false},
    point_selects =
       {"Number of point SELECT queries per transaction", 10},
    simple_ranges =
@@ -166,10 +168,16 @@ end
 
 function create_sequence(drv, con, sequence_num)
    local query
-   query = string.format([[CREATE sequence sbseq%d]], sequence_num)
+   local cache_field
+   if sysbench.opt.enable_seq_nocache then
+      cache_field = "nocache"
+   else
+      cache_field = "cache"
+   end
+   query = string.format([[CREATE sequence sbseq%d %s]], sequence_num, cache_field)
    if drv:name() == "mysql" then
        con:query(query)
-       print(string.format("Create sequence 'sbseq%d'", sequence_num))
+       print(string.format("Create sequence 'sbseq%d' %s", sequence_num, cache_field))
    else
        error("Unsupported database driver:" .. drv:name())
    end
@@ -210,16 +218,40 @@ function create_table(drv, con, table_num)
 
    print(string.format("Creating table 'sbtest%d'...", table_num))
 
-   query = string.format([[
-CREATE TABLE sbtest%d(
-  id %s,
-  k BIGINT DEFAULT '0' NOT NULL,
-  c CHAR(120) DEFAULT '' NOT NULL,
-  pad CHAR(60) DEFAULT '' NOT NULL,
-  %s (id)
-) %s %s]],
-      table_num, id_def, id_index_def, engine_def,
-      sysbench.opt.create_table_options)
+   -- If num of sequences greater than 1, there shouldn't be any key in field `id`
+   -- Otherwise seq1.1 & seqX.1 will duplicate on the index key.
+   if sysbench.opt.sequences > 1 then
+      -- AUTO_INCREMENT will require key on the field, so ignore it.
+      local warning = "Warning: sequences num greater than 1, ignore the "
+      if sysbench.opt.auto_inc then
+         warning = warning .. "AUTO_INCREMENT and KEY on field `id`"
+      else
+         warning = warning .. "KEY on field `id`"
+      end
+      print(warning)
+
+      id_def = "BIGINT NOT NULL"
+      query = string.format([[
+      CREATE TABLE sbtest%d(
+        id %s,
+        k BIGINT DEFAULT '0' NOT NULL,
+        c CHAR(120) DEFAULT '' NOT NULL,
+        pad CHAR(60) DEFAULT '' NOT NULL
+      ) %s %s]],
+            table_num, id_def, engine_def,
+            sysbench.opt.create_table_options)
+   else
+      query = string.format([[
+      CREATE TABLE sbtest%d(
+        id %s,
+        k BIGINT DEFAULT '0' NOT NULL,
+        c CHAR(120) DEFAULT '' NOT NULL,
+        pad CHAR(60) DEFAULT '' NOT NULL,
+        %s (id)
+      ) %s %s]],
+            table_num, id_def, id_index_def, engine_def,
+            sysbench.opt.create_table_options)
+   end
 
    con:query(query)
 
