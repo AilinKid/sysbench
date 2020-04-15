@@ -214,7 +214,7 @@ function create_table(drv, con, table_num)
 
    -- If num of sequences greater than 1, there shouldn't be any key in field `id`
    -- Otherwise seq1.1 & seqX.1 will duplicate on the index key.
-   if sysbench.opt.sequences > 1 then
+   if sysbench.opt.enable_sequence and sysbench.opt.sequences > 1 then
       -- AUTO_INCREMENT will require key on the field, so ignore it.
       local warning = "Warning: sequences num greater than 1, ignore the "
       if sysbench.opt.auto_inc then
